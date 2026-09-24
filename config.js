@@ -1,14 +1,13 @@
 /*
  * Chrono LOMA - PARAMÈTRES (seul fichier à modifier)
  *
- * 1. CLIENT_ID    : « ID d'application (client) » copié depuis Microsoft Entra
+ * 1. CLIENT_ID    : « 45d1bb3b-45db-40f9-a906-6a1c6066eb28 » copié depuis Microsoft Entra
  *                   (inscription d'application « Chrono LOMA »).
- * 2. FICHIER_EXCEL: lien du fichier Chrono_courriers_LOMA.xlsx sur SharePoint
- *                   (dans SharePoint : clic droit sur le fichier > Copier le lien).
+ * 2. FICHIER_EXCEL: https://lomaingienierie.sharepoint.com/:x:/g/IQDW9hy2_d2kQbI74gomkhtMAQXxcpTDzC3syYsGoy1sllY?e=3TJnTX
  * 3. PREFIXE      : texte placé devant le numéro dans le corps du mail.
  */
 window.CHRONO_CONFIG = {
-  CLIENT_ID: "COLLER-ICI-L-ID-D-APPLICATION",
-  FICHIER_EXCEL: "COLLER-ICI-LE-LIEN-DU-FICHIER-EXCEL",
+  CLIENT_ID: "45d1bb3b-45db-40f9-a906-6a1c6066eb28",
+  FICHIER_EXCEL: "https://lomaingienierie.sharepoint.com/:x:/g/IQDW9hy2_d2kQbI74gomkhtMAQXxcpTDzC3syYsGoy1sllY?e=3TJnTX",
   PREFIXE: "N/Réf. : LOMA "
 };
