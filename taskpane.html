@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chrono LOMA</title>
+  <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  <script type="text/javascript" src="config.js"></script>
+  <style>
+    :root { --bleu:#1F3864; --gris:#595959; --fond:#F4F6FA; --ok:#2E7D32; --err:#C00000; }
+    * { box-sizing:border-box; }
+    body { font-family: "Segoe UI", Arial, sans-serif; font-size:13px; margin:0; padding:14px; color:#222; background:#fff; }
+    h1 { font-size:16px; color:var(--bleu); margin:0 0 4px; }
+    .sous { color:var(--gris); font-size:12px; margin-bottom:12px; }
+    label { display:block; font-weight:600; margin:10px 0 4px; }
+    select { width:100%; padding:6px; font-size:13px; border:1px solid #bbb; border-radius:4px; background:#fff; }
+    .num { background:var(--fond); border-radius:6px; padding:10px; margin:10px 0; }
+    .num b { font-size:18px; color:var(--bleu); }
+    button { width:100%; padding:9px; margin-top:10px; font-size:13px; font-weight:600; border-radius:4px; cursor:pointer; border:1px solid var(--bleu); }
+    .principal { background:var(--bleu); color:#fff; }
+    .secondaire { background:#fff; color:var(--bleu); }
+    button:disabled { opacity:.5; cursor:default; }
+    #msg { margin-top:12px; padding:8px 10px; border-radius:4px; display:none; white-space:pre-line; }
+    #msg.ok { display:block; background:#E8F5E9; color:var(--ok); }
+    #msg.err { display:block; background:#FDECEA; color:var(--err); }
+    #msg.info { display:block; background:var(--fond); color:var(--bleu); }
+    .cache { display:none; }
+  </style>
+</head>
+<body>
+  <h1>Chrono LOMA</h1>
+  <div class="sous">Numéro de chrono pour ce mail</div>
+
+  <div id="zoneConnexion" class="cache">
+    <p>Première utilisation : connectez-vous pour accéder au tableau du chrono.</p>
+    <button id="btnConnexion" class="principal">Se connecter</button>
+  </div>
+
+  <div id="zoneForm" class="cache">
+    <div class="num">Prochain numéro : <b id="prochain">…</b></div>
+    <label for="selOperation">Opération</label>
+    <select id="selOperation"></select>
+    <label for="selRedacteur">Rédacteur</label>
+    <select id="selRedacteur"></select>
+    <label for="selExpediteur">Expéditeur</label>
+    <select id="selExpediteur"></select>
+    <button id="btnAttribuer" class="principal">Attribuer un numéro</button>
+    <button id="btnSans" class="secondaire">Pas de chrono pour ce mail</button>
+  </div>
+
+  <div id="zoneFait" class="cache">
+    <div class="num">Numéro attribué : <b id="numFait"></b></div>
+    <p>Le numéro est inscrit en tête du mail et dans le tableau.<br /><b>Cliquez maintenant sur Envoyer.</b></p>
+  </div>
+
+  <div id="msg"></div>
+
+  <script type="text/javascript" src="taskpane.js"></script>
+</body>
+</html>
