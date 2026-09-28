@@ -170,6 +170,14 @@
     if (m && valeurs.indexOf(m) >= 0) { sel.value = m; }
   }
 
+  var objetModifie = false;
+  function reprendreObjetMail() {
+    return officeAsync(function (cb) { item.subject.getAsync(cb); }).then(function (o) {
+      $("txtObjet").value = o || "";
+      objetModifie = false;
+    }).catch(function () {});
+  }
+
   async function chargerFormulaire() {
     message("Lecture du tableau du chrono…", "info");
     await ouvrirClasseur();
@@ -177,6 +185,7 @@
     remplir("selOperation", res[0]);
     remplir("selRedacteur", res[1], "chrono.redacteur");
     remplir("selExpediteur", res[2], "chrono.expediteur");
+    await reprendreObjetMail();
     $("prochain").textContent = res[3];
     montrer("zoneConnexion", false);
     montrer("zoneForm", true);
@@ -211,9 +220,12 @@
     if (!op || !red || !exp) { message("Choisissez l'opération, le rédacteur et l'expéditeur.", "err"); return; }
     $("btnAttribuer").disabled = true; $("btnSans").disabled = true;
     try {
-      var objet = await officeAsync(function (cb) { item.subject.getAsync(cb); });
-      if (!objet || !objet.trim()) {
-        message("Renseignez d'abord l'objet du mail, puis cliquez à nouveau sur « Attribuer un numéro ».", "err");
+      var objetMail = await officeAsync(function (cb) { item.subject.getAsync(cb); });
+      var saisi = $("txtObjet").value.trim();
+      // Objet modifié à la main dans le volet -> prioritaire ; sinon objet actuel du mail
+      var objet = objetModifie && saisi ? saisi : (objetMail || "").trim();
+      if (!objet) {
+        message("Renseignez l'objet du mail (ou l'objet pour le chrono), puis cliquez à nouveau sur « Attribuer un numéro ».", "err");
         return;
       }
       message("Attribution du numéro…", "info");
@@ -265,6 +277,8 @@
     item = Office.context.mailbox.item;
     $("btnAttribuer").onclick = attribuer;
     $("btnSans").onclick = sansChrono;
+    $("txtObjet").addEventListener("input", function () { objetModifie = true; });
+    $("lnkObjet").onclick = function (e) { e.preventDefault(); reprendreObjetMail(); };
     $("btnConnexion").onclick = async function () {
       try { await jeton(true); await chargerFormulaire(); } catch (e) { message("Connexion impossible.\n" + e.message, "err"); }
     };

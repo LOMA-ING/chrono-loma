@@ -14,6 +14,9 @@
     h1 { font-size:16px; color:var(--bleu); margin:0 0 4px; }
     .sous { color:var(--gris); font-size:12px; margin-bottom:12px; }
     label { display:block; font-weight:600; margin:10px 0 4px; }
+    textarea { width:100%; padding:6px; font-size:13px; font-family:inherit; border:1px solid #bbb; border-radius:4px; resize:vertical; }
+    .aide { font-size:11px; color:var(--gris); margin-top:3px; }
+    .aide a { color:var(--bleu); }
     select { width:100%; padding:6px; font-size:13px; border:1px solid #bbb; border-radius:4px; background:#fff; }
     .num { background:var(--fond); border-radius:6px; padding:10px; margin:10px 0; }
     .num b { font-size:18px; color:var(--bleu); }
@@ -45,6 +48,9 @@
     <select id="selRedacteur"></select>
     <label for="selExpediteur">Expéditeur</label>
     <select id="selExpediteur"></select>
+    <label for="txtObjet">Objet pour le chrono</label>
+    <textarea id="txtObjet" rows="2" placeholder="Reprend l'objet du mail — modifiable"></textarea>
+    <div class="aide">Modifier ici ne change que le tableau du chrono, pas l'objet du mail. <a href="#" id="lnkObjet">Reprendre l'objet du mail</a></div>
     <button id="btnAttribuer" class="principal">Attribuer un numéro</button>
     <button id="btnSans" class="secondaire">Pas de chrono pour ce mail</button>
   </div>
