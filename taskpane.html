@@ -48,6 +48,9 @@
     <select id="selRedacteur"></select>
     <label for="selExpediteur">Expéditeur</label>
     <select id="selExpediteur"></select>
+    <label for="txtDest">Destinataire pour le chrono</label>
+    <textarea id="txtDest" rows="2" placeholder="Reprend les destinataires du mail — modifiable"></textarea>
+    <div class="aide">Modifier ici ne change que le tableau du chrono, pas les destinataires du mail. <a href="#" id="lnkDest">Reprendre les destinataires du mail</a></div>
     <label for="txtObjet">Objet pour le chrono</label>
     <textarea id="txtObjet" rows="2" placeholder="Reprend l'objet du mail — modifiable"></textarea>
     <div class="aide">Modifier ici ne change que le tableau du chrono, pas l'objet du mail. <a href="#" id="lnkObjet">Reprendre l'objet du mail</a></div>
@@ -58,6 +61,8 @@
   <div id="zoneFait" class="cache">
     <div class="num">Numéro attribué : <b id="numFait"></b></div>
     <p>Le numéro est inscrit en tête du mail et dans le tableau.<br /><b>Cliquez maintenant sur Envoyer.</b></p>
+    <button id="btnAnnuler" class="secondaire">Annuler ce numéro (mail non envoyé)</button>
+    <div class="aide">Si vous renoncez à envoyer ce mail, cliquez ici avant de le supprimer : le numéro sera libéré et réutilisé.</div>
   </div>
 
   <div id="msg"></div>

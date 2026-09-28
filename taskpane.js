@@ -337,6 +337,14 @@
 
   async function demarrer() {
     item = Office.context.mailbox.item;
+    // Vérifie que taskpane.html et taskpane.js sont de la même version
+    var manquants = ["btnAttribuer", "btnSans", "btnAnnuler", "txtObjet", "txtDest", "lnkDest", "lnkObjet", "btnConnexion", "msg"].filter(function (id) { return !$(id); });
+    if (manquants.length) {
+      var m = $("msg") || document.body.appendChild(document.createElement("div"));
+      m.style.cssText = "display:block;margin-top:12px;padding:8px 10px;border-radius:4px;background:#FDECEA;color:#C00000";
+      m.textContent = "Le fichier taskpane.html n'est pas à jour sur GitHub (éléments manquants : " + manquants.join(", ") + "). Déposez la dernière version de taskpane.html, puis rechargez Outlook.";
+      return;
+    }
     $("btnAttribuer").onclick = attribuer;
     $("btnSans").onclick = sansChrono;
     $("btnAnnuler").onclick = annulerNumero;
@@ -370,6 +378,11 @@
   }
 
   Office.onReady(function (info) {
-    if (info.host === Office.HostType.Outlook) { demarrer(); }
+    if (info.host === Office.HostType.Outlook) {
+      demarrer().catch(function (e) {
+        var m = $("msg");
+        if (m) { m.className = "err"; m.textContent = "Erreur au démarrage du volet : " + (e && e.message ? e.message : e); }
+      });
+    }
   });
 })();
