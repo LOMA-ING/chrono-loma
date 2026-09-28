@@ -133,18 +133,22 @@
     if (mm.length < 2) { mm = "0" + mm; }
     return String(d.getFullYear()).slice(2) + "." + mm + ".";
   }
+  function normaliser(n) { return String(n == null ? "" : n).trim().replace(/-/g, "."); }
+  // Premier numéro LIBRE du mois : un numéro annulé ou supprimé du tableau est réutilisé.
   async function numeroSuivant() {
     var pre = prefixeMois(new Date());
     var nums = await colonne("Chrono", 0);
-    var max = 0;
+    var pris = {};
     nums.forEach(function (n) {
-      var s = String(n == null ? "" : n).trim().replace(/-/g, ".");
+      var s = normaliser(n);
       if (s.indexOf(pre) === 0) {
         var k = parseInt(s.slice(pre.length), 10);
-        if (!isNaN(k) && k > max) { max = k; }
+        if (!isNaN(k)) { pris[k] = true; }
       }
     });
-    var suite = String(max + 1);
+    var k = 1;
+    while (pris[k]) { k++; }
+    var suite = String(k);
     while (suite.length < 3) { suite = "0" + suite; }
     return pre + suite;
   }
@@ -258,6 +262,55 @@
     }
   }
 
+  // Annule le numéro attribué : supprime la ligne du tableau et la mention dans le mail.
+  async function annulerNumero() {
+    var etat = await lireEtat();
+    var num = etat.indexOf("fait:") === 0 ? etat.slice(5) : "";
+    if (!num) { return; }
+    $("btnAnnuler").disabled = true;
+    try {
+      message("Annulation du numéro " + num + "…", "info");
+      if (!pca) { await initAuth(); }
+      await ouvrirClasseur();
+      var nums = await colonne("Chrono", 0);
+      var idx = -1;
+      for (var i = nums.length - 1; i >= 0; i--) { if (normaliser(nums[i]) === normaliser(num)) { idx = i; break; } }
+      if (idx >= 0) {
+        try {
+          await graph("DELETE", base + "/tables('Chrono')/rows/itemAt(index=" + idx + ")");
+        } catch (e1) {
+          await graph("DELETE", base + "/tables('Chrono')/rows/" + idx);
+        }
+      }
+      // Retirer la ligne « Nos Réf … » du mail
+      var type = await officeAsync(function (cb) { item.body.getTypeAsync(cb); });
+      if (type === Office.CoercionType.Html) {
+        var html = await officeAsync(function (cb) { item.body.getAsync(Office.CoercionType.Html, cb); });
+        var echap = num.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        var re = new RegExp("<p[^>]*>(?:(?!</p>)[\\s\\S])*?Nos R(?:é|&eacute;)f(?:(?!</p>)[\\s\\S])*?" + echap + "(?:(?!</p>)[\\s\\S])*?</p>", "i");
+        var nouveau = html.replace(re, "");
+        if (nouveau !== html) {
+          await officeAsync(function (cb) { item.body.setAsync(nouveau, { coercionType: Office.CoercionType.Html }, cb); });
+        }
+      } else {
+        var txt = await officeAsync(function (cb) { item.body.getAsync(Office.CoercionType.Text, cb); });
+        var l = txt.split("\n");
+        if (l.length && l[0].indexOf(num) >= 0) {
+          l.shift(); while (l.length && !l[0].trim()) { l.shift(); }
+          await officeAsync(function (cb) { item.body.setAsync(l.join("\n"), { coercionType: Office.CoercionType.Text }, cb); });
+        }
+      }
+      await ecrireEtat("");
+      montrer("zoneFait", false);
+      await chargerFormulaire();
+      message("Numéro " + num + " annulé : il sera réutilisé pour le prochain chrono.", "ok");
+    } catch (e) {
+      message("L'annulation n'a pas abouti.\n" + e.message + "\nVous pouvez supprimer la ligne " + num + " directement dans le tableau.", "err");
+    } finally {
+      $("btnAnnuler").disabled = false;
+    }
+  }
+
   async function sansChrono() {
     try {
       await ecrireEtat("non");
@@ -278,6 +331,7 @@
     item = Office.context.mailbox.item;
     $("btnAttribuer").onclick = attribuer;
     $("btnSans").onclick = sansChrono;
+    $("btnAnnuler").onclick = annulerNumero;
     $("txtObjet").addEventListener("input", function () { objetModifie = true; });
     $("lnkObjet").onclick = function (e) { e.preventDefault(); reprendreObjetMail(); };
     $("btnConnexion").onclick = async function () {
