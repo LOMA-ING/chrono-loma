@@ -126,18 +126,19 @@
     var v = await colonne(table, 0);
     return v.map(function (x) { return String(x == null ? "" : x).trim(); }).filter(function (x) { return x; });
   }
-  // Format AA-MM-NNN, numéro remis à 001 chaque mois (ex. 26-09-001)
+  // Format AA.MM.NNN, numéro remis à 001 chaque mois (ex. 26.09.001).
+  // Les anciens numéros au format AA-MM-NNN sont aussi pris en compte (pas de doublon).
   function prefixeMois(d) {
     var mm = String(d.getMonth() + 1);
     if (mm.length < 2) { mm = "0" + mm; }
-    return String(d.getFullYear()).slice(2) + "-" + mm + "-";
+    return String(d.getFullYear()).slice(2) + "." + mm + ".";
   }
   async function numeroSuivant() {
     var pre = prefixeMois(new Date());
     var nums = await colonne("Chrono", 0);
     var max = 0;
     nums.forEach(function (n) {
-      var s = String(n == null ? "" : n).trim();
+      var s = String(n == null ? "" : n).trim().replace(/-/g, ".");
       if (s.indexOf(pre) === 0) {
         var k = parseInt(s.slice(pre.length), 10);
         if (!isNaN(k) && k > max) { max = k; }
@@ -236,8 +237,8 @@
         values: [[num, dateExcel(new Date()), "Mail", dest, objet, op, red, exp, ""]]
       });
       var type = await officeAsync(function (cb) { item.body.getTypeAsync(cb); });
-      // « Nos Réf : Nom complet rédacteur/Nom complet expéditeur - AA-MM-NNN » (expéditeur omis s'il est identique au rédacteur)
-      var refs = nomComplet(red) + (exp && exp !== red ? "/" + nomComplet(exp) : "");
+      // « Nos Réf : DIMINUTIF rédacteur/DIMINUTIF expéditeur - AA.MM.NNN » (expéditeur omis s'il est identique au rédacteur)
+      var refs = red + (exp && exp !== red ? "/" + exp : "");
       var texte = "Nos Réf : " + refs + " - " + num;
       if (type === Office.CoercionType.Html) {
         await officeAsync(function (cb) {
