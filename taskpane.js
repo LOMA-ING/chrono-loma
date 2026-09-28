@@ -109,6 +109,19 @@
     var r = await graph("GET", base + "/tables('" + table + "')/dataBodyRange?$select=values");
     return (r.values || []).map(function (l) { return l[index]; });
   }
+  // Tables à deux colonnes (Diminutif | Nom complet) : renvoie { diminutif: nom complet }
+  var NOMS = {};
+  async function listeAvecNoms(table) {
+    var r = await graph("GET", base + "/tables('" + table + "')/dataBodyRange?$select=values");
+    var courts = [];
+    (r.values || []).forEach(function (l) {
+      var c = String(l[0] == null ? "" : l[0]).trim();
+      var n = String(l.length > 1 && l[1] != null ? l[1] : "").trim();
+      if (c) { courts.push(c); NOMS[c] = n || c; }
+    });
+    return courts;
+  }
+  function nomComplet(c) { return NOMS[c] || c; }
   async function liste(table) {
     var v = await colonne(table, 0);
     return v.map(function (x) { return String(x == null ? "" : x).trim(); }).filter(function (x) { return x; });
@@ -134,6 +147,9 @@
     while (suite.length < 3) { suite = "0" + suite; }
     return pre + suite;
   }
+  function echapper(t) {
+    return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
   function dateExcel(d) {
     return (d.getTime() - d.getTimezoneOffset() * 60000) / 86400000 + 25569;
   }
@@ -146,7 +162,9 @@
     vide.value = ""; vide.textContent = "— choisir —";
     sel.appendChild(vide);
     valeurs.forEach(function (v) {
-      var o = document.createElement("option"); o.value = v; o.textContent = v; sel.appendChild(o);
+      var o = document.createElement("option"); o.value = v;
+      o.textContent = NOMS[v] && NOMS[v] !== v ? v + " – " + NOMS[v] : v;
+      sel.appendChild(o);
     });
     var m = cleMemo ? memo(cleMemo) : null;
     if (m && valeurs.indexOf(m) >= 0) { sel.value = m; }
@@ -155,7 +173,7 @@
   async function chargerFormulaire() {
     message("Lecture du tableau du chrono…", "info");
     await ouvrirClasseur();
-    var res = await Promise.all([liste("Operations"), liste("Redacteurs"), liste("Expediteurs"), numeroSuivant()]);
+    var res = await Promise.all([liste("Operations"), listeAvecNoms("Redacteurs"), listeAvecNoms("Expediteurs"), numeroSuivant()]);
     remplir("selOperation", res[0]);
     remplir("selRedacteur", res[1], "chrono.redacteur");
     remplir("selExpediteur", res[2], "chrono.expediteur");
@@ -206,10 +224,12 @@
         values: [[num, dateExcel(new Date()), "Mail", dest, objet, op, red, exp, ""]]
       });
       var type = await officeAsync(function (cb) { item.body.getTypeAsync(cb); });
-      var texte = (CFG.PREFIXE || "N/Réf. : ") + num;
+      // « Nos Réf : Nom complet rédacteur/Nom complet expéditeur - AA-MM-NNN » (expéditeur omis s'il est identique au rédacteur)
+      var refs = nomComplet(red) + (exp && exp !== red ? "/" + nomComplet(exp) : "");
+      var texte = "Nos Réf : " + refs + " - " + num;
       if (type === Office.CoercionType.Html) {
         await officeAsync(function (cb) {
-          item.body.prependAsync('<p style="font-family:Arial,sans-serif;font-size:10pt;color:#1F3864"><b>' + texte + "</b></p>", { coercionType: Office.CoercionType.Html }, cb);
+          item.body.prependAsync('<p style="font-family:Calibri,sans-serif;font-size:8pt;margin:0 0 8pt 0"><b>' + echapper(texte) + "</b></p>", { coercionType: Office.CoercionType.Html }, cb);
         });
       } else {
         await officeAsync(function (cb) { item.body.prependAsync(texte + "\n\n", { coercionType: Office.CoercionType.Text }, cb); });
