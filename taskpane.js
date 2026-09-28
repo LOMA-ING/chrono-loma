@@ -176,6 +176,10 @@
   }
 
   var objetModifie = false;
+  var destModifie = false;
+  function reprendreDestMail() {
+    return destinataires().then(function (d) { $("txtDest").value = d || ""; destModifie = false; }).catch(function () {});
+  }
   function reprendreObjetMail() {
     return officeAsync(function (cb) { item.subject.getAsync(cb); }).then(function (o) {
       $("txtObjet").value = o || "";
@@ -191,6 +195,7 @@
     remplir("selRedacteur", res[1], "chrono.redacteur");
     remplir("selExpediteur", res[2], "chrono.expediteur");
     await reprendreObjetMail();
+    await reprendreDestMail();
     $("prochain").textContent = res[3];
     montrer("zoneConnexion", false);
     montrer("zoneForm", true);
@@ -234,7 +239,10 @@
         return;
       }
       message("Attribution du numéro…", "info");
-      var dest = await destinataires();
+      var destMail = await destinataires();
+      var destSaisi = $("txtDest").value.trim();
+      // Destinataire modifié à la main dans le volet -> prioritaire ; sinon destinataires actuels du mail
+      var dest = destModifie && destSaisi ? destSaisi : destMail;
       var num = await numeroSuivant();
       await graph("POST", base + "/tables('Chrono')/rows/add", {
         index: null,
@@ -333,6 +341,8 @@
     $("btnSans").onclick = sansChrono;
     $("btnAnnuler").onclick = annulerNumero;
     $("txtObjet").addEventListener("input", function () { objetModifie = true; });
+    $("txtDest").addEventListener("input", function () { destModifie = true; });
+    $("lnkDest").onclick = function (e) { e.preventDefault(); reprendreDestMail(); };
     $("lnkObjet").onclick = function (e) { e.preventDefault(); reprendreObjetMail(); };
     $("btnConnexion").onclick = async function () {
       try { await jeton(true); await chargerFormulaire(); } catch (e) { message("Connexion impossible.\n" + e.message, "err"); }
