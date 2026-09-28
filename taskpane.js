@@ -9,6 +9,7 @@
 (function () {
   "use strict";
 
+  var VERSION = "2026-09-28d";
   var CFG = window.CHRONO_CONFIG || {};
   var SCOPES = ["Files.ReadWrite.All", "User.Read"];
   var GRAPH = "https://graph.microsoft.com/v1.0";
@@ -43,6 +44,13 @@
     }
     throw new Error("Impossible de charger la bibliothèque de connexion Microsoft (MSAL).");
   }
+
+  function delai(promesse, secondes, nomEtape) {
+    return Promise.race([promesse, new Promise(function (_, ko) {
+      setTimeout(function () { ko(new Error("Délai dépassé à l'étape : " + nomEtape)); }, secondes * 1000);
+    })]);
+  }
+  function etape(t) { var m = $("msg"); if (m) { m.className = "info"; m.textContent = t; } }
 
   function officeAsync(fn) {
     return new Promise(function (ok, ko) {
@@ -340,9 +348,9 @@
     // Vérifie que taskpane.html et taskpane.js sont de la même version
     var manquants = ["btnAttribuer", "btnSans", "btnAnnuler", "txtObjet", "txtDest", "lnkDest", "lnkObjet", "btnConnexion", "msg"].filter(function (id) { return !$(id); });
     if (manquants.length) {
-      var m = $("msg") || document.body.appendChild(document.createElement("div"));
-      m.style.cssText = "display:block;margin-top:12px;padding:8px 10px;border-radius:4px;background:#FDECEA;color:#C00000";
-      m.textContent = "Le fichier taskpane.html n'est pas à jour sur GitHub (éléments manquants : " + manquants.join(", ") + "). Déposez la dernière version de taskpane.html, puis rechargez Outlook.";
+      var mm = $("msg") || document.body.appendChild(document.createElement("div"));
+      mm.style.cssText = "display:block;margin-top:12px;padding:8px 10px;border-radius:4px;background:#FDECEA;color:#C00000";
+      mm.textContent = "Le fichier taskpane.html n'est pas à jour sur GitHub (éléments manquants : " + manquants.join(", ") + "). Déposez la dernière version de taskpane.html, puis rechargez Outlook.";
       return;
     }
     $("btnAttribuer").onclick = attribuer;
@@ -360,29 +368,43 @@
       message("Le fichier config.js n'est pas encore rempli (ID d'application et lien du fichier Excel).", "err");
       return;
     }
-    var etat = await lireEtat();
-    if (etat.indexOf("fait:") === 0) { afficherFait(etat.slice(5)); return; }
+    etape("Démarrage (1/4) : lecture du mail…");
+    var etat = await delai(lireEtat(), 15, "lecture du mail");
+    if (etat.indexOf("fait:") === 0) { afficherFait(etat.slice(5)); effacerMessage(); return; }
 
     try {
-      await initAuth();
+      etape("Démarrage (2/4) : chargement de la connexion Microsoft…");
+      await delai(initAuth(), 30, "chargement de la connexion Microsoft (MSAL)");
     } catch (e) { message(e.message, "err"); return; }
 
     try {
-      await jeton(false);
-      await chargerFormulaire();
+      etape("Démarrage (3/4) : connexion au compte…");
+      await delai(jeton(false), 30, "connexion au compte");
     } catch (e) {
       montrer("zoneConnexion", true);
-      effacerMessage();
+      message("Connexion automatique impossible : cliquez sur « Se connecter ».\n(" + (e && e.message ? e.message : e) + ")", "info");
+      return;
+    }
+    try {
+      etape("Démarrage (4/4) : lecture du tableau Excel…");
+      await delai(chargerFormulaire(), 60, "lecture du tableau Excel");
+    } catch (e) {
+      message("Impossible de lire le tableau du chrono.\n" + (e && e.message ? e.message : e), "err");
+      return;
     }
     if (etat === "non") { message("Ce mail est actuellement marqué « sans chrono ». Vous pouvez encore attribuer un numéro.", "info"); }
   }
 
   Office.onReady(function (info) {
-    if (info.host === Office.HostType.Outlook) {
-      demarrer().catch(function (e) {
-        var m = $("msg");
-        if (m) { m.className = "err"; m.textContent = "Erreur au démarrage du volet : " + (e && e.message ? e.message : e); }
-      });
+    var sous = document.querySelector(".sous");
+    if (sous) { sous.textContent = "Numéro de chrono pour ce mail · version " + VERSION; }
+    if (info.host !== Office.HostType.Outlook) {
+      etape("Page chargée correctement (version " + VERSION + "). Elle fonctionne uniquement depuis Outlook.");
+      return;
     }
+    demarrer().catch(function (e) {
+      var m = $("msg");
+      if (m) { m.className = "err"; m.textContent = "Erreur au démarrage du volet : " + (e && e.message ? e.message : e); }
+    });
   });
 })();
